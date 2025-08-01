@@ -15,6 +15,8 @@ add_executable(simple-image-writer
   src/main.c
 )
 
+target_compile_options(simple-image-writer PUBLIC -g)
+
 target_link_libraries(simple-image-writer PRIVATE ${GTK_LIBRARIES})
 
 target_include_directories(simple-image-writer PRIVATE ${GTK_INCLUDE_DIRS})
