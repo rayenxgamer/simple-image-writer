@@ -38,22 +38,27 @@ static void run_app (GtkApplication* app, gpointer        user_data) {
 
   GtkWidget *space;
   space = gtk_label_new("");
+  gtk_widget_set_name(space, "space");
+  gtk_widget_set_size_request (space, 100, 50);
 
-  gtk_grid_attach (GTK_GRID (grid), button, 0, 0, 1, 1);
+  gtk_widget_set_size_request (button, 100, 50);
   
-  button = gtk_button_new_with_label ("Button 2");
-  g_signal_connect (button, "clicked", G_CALLBACK (format_and_image), NULL);
+  gtk_grid_attach(GTK_GRID(grid), space, 0, 0, 1, 1 );
+  gtk_grid_attach(GTK_GRID(grid), button, 1, 0, 1, 1);
 
-  gtk_grid_attach(GTK_GRID(grid), space, 0, 1, 1, 1 );
-  gtk_grid_attach (GTK_GRID (grid), button, 1, 1, 1, 1);
-  
   space = gtk_label_new("");
-  gtk_grid_attach(GTK_GRID(grid), space, 2, 1, 1, 1 );
+  gtk_widget_set_name(space, "space");
+  gtk_widget_set_size_request (space, 100, 50);
+  gtk_grid_attach(GTK_GRID(grid), space, 2, 0, 1, 1 );
 
-    button = gtk_button_new_with_label ("Button 3");
-  g_signal_connect (button, "clicked", G_CALLBACK (format_and_image), NULL);
+  space = gtk_label_new("");
+  gtk_widget_set_name(space, "space");
+  gtk_widget_set_size_request (space, 50, 50);
+  gtk_grid_attach(GTK_GRID(grid), space, 0, 1, 1, 1 );
 
-  gtk_grid_attach (GTK_GRID (grid), button, 0, 2, 1, 1);
+  button = gtk_button_new_with_label("MEOW :3");
+  gtk_grid_attach(GTK_GRID(grid), button, 1, 1, 1, 1);
+
   
   gtk_window_set_title (GTK_WINDOW (window), "Simple Image Writer (GNU-Linux Only)");
   gtk_window_set_default_size (GTK_WINDOW (window), 250, 200);
