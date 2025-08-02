@@ -3,11 +3,25 @@
 
 GtkBuilder* builder; /* apprently this is like a makeshift asset manager for gtk? */
 
+typedef enum {
+  SPACE,
+  BUTTON,
+  LABEL
+} widget_type;
+
+typedef struct {
+  widget_type type;
+  gint height, width;
+  const char* label_text;
+  const char* css_class_name;
+} app_widget_props;
+
 gint global_list_item_counter = 0;
 
 void list_add_item (GtkWidget *listbox, char *list_label);
 void format_and_image(GtkApplication* app, gpointer user_data);
-void app_load_css(const gchar* file_path);
+GtkWidget* app_ui_create_widget(app_widget_props props);
+void app_ui_load_css(const gchar* file_path);
 
 static void init_app(GtkApplication* app, gpointer user_data);
 static void run_app(GtkApplication* app, gpointer user_data);
@@ -25,45 +39,31 @@ static void run_app (GtkApplication* app, gpointer        user_data) {
     "border-width", 10,
     NULL
   );
-  
 
   GtkWidget* grid;
   grid = gtk_grid_new();
   gtk_container_add (GTK_CONTAINER (window), grid);
   gtk_widget_set_name(grid, "main_grid");
 
-  GtkWidget* button;
-  button = gtk_button_new_with_label("Format and Image!");
+  GtkWidget* button = app_ui_create_widget((app_widget_props){BUTTON, 50, 50, "Format And Image!", "button"});
+  gtk_grid_attach(GTK_GRID(grid), button, 1, 2, 1, 1);
   g_signal_connect (button, "clicked", G_CALLBACK (format_and_image), NULL);
 
-  GtkWidget *space;
-  space = gtk_label_new("");
-  gtk_widget_set_name(space, "space");
-  gtk_widget_set_size_request (space, 100, 50);
-
-  gtk_widget_set_size_request (button, 100, 50);
-  
+  GtkWidget *space = app_ui_create_widget((app_widget_props){SPACE, 50, 100, "", "space"});
   gtk_grid_attach(GTK_GRID(grid), space, 0, 0, 1, 1 );
-  gtk_grid_attach(GTK_GRID(grid), button, 1, 0, 1, 1);
 
-  space = gtk_label_new("");
-  gtk_widget_set_name(space, "space");
-  gtk_widget_set_size_request (space, 100, 50);
+
+  space = app_ui_create_widget((app_widget_props){SPACE, 50, 100, "", "space"});
   gtk_grid_attach(GTK_GRID(grid), space, 2, 0, 1, 1 );
 
-  space = gtk_label_new("");
-  gtk_widget_set_name(space, "space");
-  gtk_widget_set_size_request (space, 50, 50);
+
+  space = app_ui_create_widget((app_widget_props){SPACE, 50, 100, "", "space"});
   gtk_grid_attach(GTK_GRID(grid), space, 0, 1, 1, 1 );
-
-  button = gtk_button_new_with_label("MEOW :3");
-  gtk_grid_attach(GTK_GRID(grid), button, 1, 1, 1, 1);
-
   
   gtk_window_set_title (GTK_WINDOW (window), "Simple Image Writer (GNU-Linux Only)");
   gtk_window_set_default_size (GTK_WINDOW (window), 250, 200);
   
-  app_load_css("../resources/style.css");
+  app_ui_load_css("../resources/style.css");
  
   gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER_ALWAYS);
   gtk_widget_show_all(window);
@@ -73,7 +73,7 @@ static void run_app (GtkApplication* app, gpointer        user_data) {
 int main (int  argc, char **argv) {
   GtkApplication *app = gtk_application_new ("org.gtk.example", G_APPLICATION_DEFAULT_FLAGS);
   int status;
-  
+   
   g_signal_connect (app, "startup", G_CALLBACK (init_app), NULL);
   g_signal_connect (app, "activate", G_CALLBACK (run_app), NULL);
   
@@ -97,7 +97,7 @@ void format_and_image(GtkApplication* app, gpointer user_data){
   return;
 }
 
-void app_load_css(const gchar* file_path){
+void app_ui_load_css(const gchar* file_path){
   GtkCssProvider* provider;
   GdkDisplay* display;
   GdkScreen* screen;
@@ -120,3 +120,24 @@ void app_load_css(const gchar* file_path){
   }
   g_object_unref(provider);
 }
+
+GtkWidget* app_ui_create_widget(app_widget_props props){
+  GtkWidget* temp_widget;
+  switch(props.type){
+    case SPACE:
+        temp_widget = gtk_label_new("");
+      break;
+    case BUTTON:
+        temp_widget = gtk_button_new_with_label(props.label_text);
+      break;
+    case LABEL:
+        temp_widget = gtk_label_new(props.label_text);
+      break;
+    default:
+      printf("none selected!\n");
+  }
+  
+  gtk_widget_set_name(temp_widget, props.css_class_name); 
+  gtk_widget_set_size_request (temp_widget, props.width, props.height);
+  return temp_widget;
+};

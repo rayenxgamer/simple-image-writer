@@ -10,3 +10,8 @@ window{
 #space {
     background-color: green;
 }
+
+#button_rounded {
+    border-width: 1px;
+    border-radius: 30px;
+}
