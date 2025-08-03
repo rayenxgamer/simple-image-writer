@@ -1,4 +1,5 @@
 #include <gtk/gtk.h>
+#include <string.h>
 #include <stdio.h>
 
 GtkBuilder* builder; /* apprently this is like a makeshift asset manager for gtk? */
@@ -6,7 +7,9 @@ GtkBuilder* builder; /* apprently this is like a makeshift asset manager for gtk
 typedef enum {
   SPACE,
   BUTTON,
-  LABEL
+  LABEL,
+ COMBO_BOX
+ 
 } widget_type;
 
 typedef struct {
@@ -21,6 +24,7 @@ gint global_list_item_counter = 0;
 void list_add_item (GtkWidget *listbox, char *list_label);
 void format_and_image(GtkApplication* app, gpointer user_data);
 GtkWidget* app_ui_create_widget(app_widget_props props);
+void app_ui_combobox_append(GtkWidget* combo_box,const char* text);
 void app_ui_load_css(const gchar* file_path);
 
 static void init_app(GtkApplication* app, gpointer user_data);
@@ -44,20 +48,28 @@ static void run_app (GtkApplication* app, gpointer        user_data) {
   grid = gtk_grid_new();
   gtk_container_add (GTK_CONTAINER (window), grid);
   gtk_widget_set_name(grid, "main_grid");
-
-  GtkWidget* button = app_ui_create_widget((app_widget_props){BUTTON, 50, 50, "Format And Image!", "button"});
+  
+  GtkWidget* button;
+  button = app_ui_create_widget((app_widget_props){BUTTON, 50, 50, "Format And Image!", "button"});
   gtk_grid_attach(GTK_GRID(grid), button, 1, 2, 1, 1);
   g_signal_connect (button, "clicked", G_CALLBACK (format_and_image), NULL);
 
-  GtkWidget *space = app_ui_create_widget((app_widget_props){SPACE, 50, 100, "", "space"});
+  GtkWidget* combo_box;
+  combo_box = app_ui_create_widget((app_widget_props){COMBO_BOX, 60, 150, "", "combo"});
+  app_ui_combobox_append(combo_box, "UWU ;3");
+  app_ui_combobox_append(combo_box,"OWO ;3");
+  app_ui_combobox_append(combo_box,"VWV ;3");
+  gtk_combo_box_set_active(GTK_COMBO_BOX(combo_box), 0);
+  gtk_grid_attach(GTK_GRID(grid), combo_box, 0, 1, 3, 1);
+
+  GtkWidget *space;
+  space = app_ui_create_widget((app_widget_props){SPACE, 30, 100, "", "space"});
   gtk_grid_attach(GTK_GRID(grid), space, 0, 0, 1, 1 );
 
-
-  space = app_ui_create_widget((app_widget_props){SPACE, 50, 100, "", "space"});
+  space = app_ui_create_widget((app_widget_props){SPACE, 30, 100, "", "space"});
   gtk_grid_attach(GTK_GRID(grid), space, 2, 0, 1, 1 );
 
-
-  space = app_ui_create_widget((app_widget_props){SPACE, 50, 100, "", "space"});
+  space = app_ui_create_widget((app_widget_props){SPACE, 30, 100, "", "space"});
   gtk_grid_attach(GTK_GRID(grid), space, 0, 1, 1, 1 );
   
   gtk_window_set_title (GTK_WINDOW (window), "Simple Image Writer (GNU-Linux Only)");
@@ -73,7 +85,7 @@ static void run_app (GtkApplication* app, gpointer        user_data) {
 int main (int  argc, char **argv) {
   GtkApplication *app = gtk_application_new ("org.gtk.example", G_APPLICATION_DEFAULT_FLAGS);
   int status;
-   
+  
   g_signal_connect (app, "startup", G_CALLBACK (init_app), NULL);
   g_signal_connect (app, "activate", G_CALLBACK (run_app), NULL);
   
@@ -133,6 +145,9 @@ GtkWidget* app_ui_create_widget(app_widget_props props){
     case LABEL:
         temp_widget = gtk_label_new(props.label_text);
       break;
+    case COMBO_BOX:
+        temp_widget = gtk_combo_box_text_new();
+      break;
     default:
       printf("none selected!\n");
   }
@@ -141,3 +156,11 @@ GtkWidget* app_ui_create_widget(app_widget_props props){
   gtk_widget_set_size_request (temp_widget, props.width, props.height);
   return temp_widget;
 };
+
+void app_ui_combobox_append(GtkWidget* combo_box,const char* text){
+  if (strcmp(text, "") == 0){
+    printf("\e[31mWARNING:\e[0m empty string has been entered");
+  };
+  
+  gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_box), NULL, text);
+}

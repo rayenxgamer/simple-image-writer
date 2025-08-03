@@ -1,14 +1,26 @@
-
 window{
-    background-color: purple;
+    background-color: #d3d3d3;
+    font: 18px "Minecraft Default";
 }
 
 #main_grid{
-    background-color: red;
 }
 
 #space {
-    background-color: green;
+}
+
+
+#combo {
+    font: 21px "Minecraft Default";
+    margin-bottom: 10px;
+    border-color: black;
+}
+
+#button {
+    margin-top: 3px;
+    border-color: purple;
+    border-width: 1px;
+    border-radius: 30px;
 }
 
 #button_rounded {
