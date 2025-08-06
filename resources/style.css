@@ -1,5 +1,5 @@
 window{
-    background-color: #d3d3d3;
+    background-color: #89BCC4;
     font: 18px "Minecraft Default";
 }
 
@@ -18,9 +18,13 @@ window{
 
 #button {
     margin-top: 3px;
-    border-color: purple;
+    border-color: #917974;
     border-width: 1px;
     border-radius: 30px;
+}
+
+#button:hover {
+    background-image: image(#bbb8b8);
 }
 
 #button_rounded {

@@ -1,8 +1,16 @@
 #include <gtk/gtk.h>
+#include <tinyfiledialogs.h>
+#include <pthread.h>
+#include <dirent.h>
+#include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 
 GtkBuilder* builder; /* apprently this is like a makeshift asset manager for gtk? */
+
+#define FILTER_PATTERNS_COUNT 2
+#define DONE_TIMEOUT 8
 
 typedef enum {
   SPACE,
@@ -21,20 +29,35 @@ typedef struct {
 
 gint global_list_item_counter = 0;
 
-void list_add_item (GtkWidget *listbox, char *list_label);
+GtkWidget* combo_box;
+GtkWidget* button;
+
+/*  /////////////////////////////////////////////////////
+ /
+  taken from stackoverflow, https://stackoverflow.com/questions/8465006/how-do-i-concatenate-two-strings-in-c
+ /
+*/ /////////////////////////////////////////////////////
+
+char* concat(const char *s1, const char *s2)
+{
+    char *result = malloc(strlen(s1) + strlen(s2) + 1); // +1 for the null-terminator
+    // in real code you would check for errors in malloc here
+    strcpy(result, s1);
+    strcat(result, s2);
+    return result;
+}
+
+static void run_app(GtkApplication* app, gpointer user_data);
+void app_find_blocks();
+char* app_select_image_file();
 void format_and_image(GtkApplication* app, gpointer user_data);
 GtkWidget* app_ui_create_widget(app_widget_props props);
 void app_ui_combobox_append(GtkWidget* combo_box,const char* text);
 void app_ui_load_css(const gchar* file_path);
+void* app_multithread_FAM();
 
-static void init_app(GtkApplication* app, gpointer user_data);
-static void run_app(GtkApplication* app, gpointer user_data);
-
-static void init_app(GtkApplication* app, gpointer user_data){
-  return;
-}
-
-static void run_app (GtkApplication* app, gpointer        user_data) {   
+static void run_app (GtkApplication* app, gpointer        user_data) {
+  
   GtkWidget *window = g_object_new(
     GTK_TYPE_APPLICATION_WINDOW,
     "application", GTK_APPLICATION(app),
@@ -49,16 +72,13 @@ static void run_app (GtkApplication* app, gpointer        user_data) {
   gtk_container_add (GTK_CONTAINER (window), grid);
   gtk_widget_set_name(grid, "main_grid");
   
-  GtkWidget* button;
   button = app_ui_create_widget((app_widget_props){BUTTON, 50, 50, "Format And Image!", "button"});
   gtk_grid_attach(GTK_GRID(grid), button, 1, 2, 1, 1);
   g_signal_connect (button, "clicked", G_CALLBACK (format_and_image), NULL);
 
-  GtkWidget* combo_box;
   combo_box = app_ui_create_widget((app_widget_props){COMBO_BOX, 60, 150, "", "combo"});
-  app_ui_combobox_append(combo_box, "UWU ;3");
-  app_ui_combobox_append(combo_box,"OWO ;3");
-  app_ui_combobox_append(combo_box,"VWV ;3");
+  app_ui_combobox_append(combo_box, "Select a device to flash to!");
+  app_find_blocks();
   gtk_combo_box_set_active(GTK_COMBO_BOX(combo_box), 0);
   gtk_grid_attach(GTK_GRID(grid), combo_box, 0, 1, 3, 1);
 
@@ -85,28 +105,70 @@ static void run_app (GtkApplication* app, gpointer        user_data) {
 int main (int  argc, char **argv) {
   GtkApplication *app = gtk_application_new ("org.gtk.example", G_APPLICATION_DEFAULT_FLAGS);
   int status;
+
   
-  g_signal_connect (app, "startup", G_CALLBACK (init_app), NULL);
+  if (getuid()){
+    char* exit_error = "Please Run this as root (sudo)";
+    printf("%s", exit_error);
+       tinyfd_messageBox(
+	"warning!",
+	exit_error,
+	"exit",
+	"warning",
+	0
+     );
+    exit(1);
+  }
+  
   g_signal_connect (app, "activate", G_CALLBACK (run_app), NULL);
   
   status = g_application_run (G_APPLICATION (app), argc, argv);
-  g_object_unref (app);
 
   return status;
 }
 
-void list_add_item (GtkWidget *listbox, char *list_label){
-      gtk_list_box_insert(GTK_LIST_BOX(listbox), g_object_new(
-      GTK_TYPE_LABEL,
-      "visible", TRUE,
-      "label", list_label,
-      NULL
-    ), global_list_item_counter);
-  global_list_item_counter++;
+void* app_multithread_FAM(){
+  char* filetoflash;
+  char* umount_command;
+  char* dd_command = "dd ";
+  char* selected;
+
+  selected = gtk_combo_box_text_get_active_text((GtkComboBoxText*)combo_box);
+  
+  if(strcmp(selected, "Select a device to flash to!") == 0){
+    printf("select a proper device!");
+    exit(1);
+  }
+    
+  filetoflash = app_select_image_file();
+  umount_command = concat("umount ", selected);
+
+  system(umount_command);
+      
+  dd_command = concat(dd_command, "if=");
+  dd_command = concat(dd_command, filetoflash);
+  dd_command = concat(dd_command, " of=");
+  dd_command = concat(dd_command, selected);
+  dd_command = concat(dd_command, " bs=8M status=progress");
+  
+
+  gtk_button_set_label (GTK_BUTTON(button), "        Wait!!...       ");
+  gtk_widget_set_sensitive(button, FALSE);
+  
+  system(dd_command);
+
+  sleep(1); /* i don't get it at all, i can only assume that gtk needs a little more time
+	       but the app literally crashes without this */
+  
+  gtk_button_set_label (GTK_BUTTON(button), "Format And Image");
+  gtk_widget_set_sensitive(button, TRUE);
 }
+
 void format_and_image(GtkApplication* app, gpointer user_data){
-  printf("hello world!");
-  return;
+  pthread_t thread;
+  
+  pthread_create(&thread, NULL, app_multithread_FAM, NULL);
+  pthread_detach(thread); 
 }
 
 void app_ui_load_css(const gchar* file_path){
@@ -164,3 +226,49 @@ void app_ui_combobox_append(GtkWidget* combo_box,const char* text){
   
   gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_box), NULL, text);
 }
+char* app_select_image_file(){
+  char* filename;
+  char const* filters[1] = {"*.iso"};
+  
+  filename = tinyfd_openFileDialog(
+    "Select an image!",
+    "../",
+    1,
+    filters,
+    NULL,
+    0
+  );
+
+ if (! filename){
+   tinyfd_messageBox(
+	"Error",
+	"select a proper iso next time!",
+	"ok",
+	"error",
+	0
+     );
+  }
+
+ return filename;
+};
+void app_find_blocks(){
+  struct dirent *dir_contents;
+
+    DIR *dptr = opendir("/dev/");
+    char* fullname = "/dev/";
+
+    if (dptr == NULL)
+    {
+        printf("Could not open current directory" );
+    }
+
+    while ((dir_contents = readdir(dptr)) != NULL){
+      if(strncmp("sd", dir_contents->d_name, 2) == 0 && strlen(dir_contents->d_name) < 4)
+      {
+	printf("%s\n", dir_contents->d_name);
+	app_ui_combobox_append(combo_box, concat(fullname ,dir_contents->d_name));	
+      }
+    }
+
+    closedir(dptr);   
+};
